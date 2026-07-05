@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة ورديات العمل</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23059669'/%3E%3Cstop offset='100%25' stop-color='%2314b8a6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M18 26l-6 6 6 6' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M12 32h28' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M46 20l6 6-6 6' stroke='%23fbbf24' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M52 26H24' stroke='%23fbbf24' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: { extend: { fontFamily: { cairo: ['Cairo', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #050a15;
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === الخلفية === */
+        .bg-scene {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse 600px 400px at 15% 30%, rgba(16, 185, 129, 0.07) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 500px at 85% 15%, rgba(245, 158, 11, 0.05) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 300px at 50% 85%, rgba(6, 182, 212, 0.04) 0%, transparent 70%),
+                #050a15;
+        }
+
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.35;
+            animation: orbFloat 22s ease-in-out infinite alternate;
+        }
+
+        .bg-orb:nth-child(1) {
+            width: 320px;
+            height: 320px;
+            top: 8%;
+            right: 5%;
+            background: rgba(16, 185, 129, 0.12);
+            animation-duration: 26s;
+        }
+
+        .bg-orb:nth-child(2) {
+            width: 260px;
+            height: 260px;
+            bottom: 12%;
+            left: 8%;
+            background: rgba(245, 158, 11, 0.09);
+            animation-duration: 30s;
+            animation-delay: -6s;
+        }
+
+        .bg-orb:nth-child(3) {
+            width: 200px;
+            height: 200px;
+            top: 55%;
+            left: 45%;
+            background: rgba(6, 182, 212, 0.07);
+            animation-duration: 20s;
+            animation-delay: -12s;
+        }
+
+        @keyframes orbFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(25px, -18px) scale(1.04);
+            }
+
+            66% {
+                transform: translate(-18px, 12px) scale(0.96);
+            }
+
+            100% {
+                transform: translate(8px, -8px) scale(1.01);
+            }
+        }
+
+        /* === شريط التنقل === */
+        .top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(5, 10, 21, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        }
+
+        .nav-btn {
+            padding: 10px 22px;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            color: #64748b;
+        }
+
+        .nav-btn:hover {
+            color: #94a3b8;
+            background: rgba(148, 163, 184, 0.06);
+        }
+
+        .nav-btn.active {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+        }
+
+        /* === الكروت === */
+        .shift-card {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.09);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shift-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .shift-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(148, 163, 184, 0.18);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-teal::before {
+            background: linear-gradient(90deg, #14b8a6, #06b6d4);
+        }
+
+        .card-green::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .card-amber::before {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .card-rose::before {
+            background: linear-gradient(90deg, #f43f5e, #fb7185);
+        }
+
+        .card-cyan::before {
+            background: linear-gradient(90deg, #06b6d4, #22d3ee);
+        }
+
+        /* === الحقول === */
+        .field-input {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid rgba(71, 85, 105, 0.45);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #f1f5f9;
+            font-family: 'Cairo', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            transition: border-color 0.25s, box-shadow 0.25s;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+
+        .field-input::-webkit-outer-spin-button,
+        .field-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .field-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+        }
+
+        .field-input::placeholder {
+            color: #475569;
+            font-weight: 400;
+        }
+
+        .field-input.readonly-field {
+            background: rgba(15, 23, 42, 0.9);
+            border-color: rgba(71, 85, 105, 0.25);
+            cursor: default;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        select.field-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            padding-left: 32px;
+        }
+
+        /* === عناوين الأقسام === */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .icon-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        /* === إجمالي القسم === */
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-top: 14px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* === النتائج === */
+        .result-deficit {
+            color: #f87171 !important;
+            border-color: rgba(248, 113, 113, 0.3) !important;
+            background: rgba(127, 29, 29, 0.12) !important;
+        }
+
+        .result-surplus {
+            color: #34d399 !important;
+            border-color: rgba(52, 211, 153, 0.3) !important;
+            background: rgba(6, 78, 59, 0.12) !important;
+        }
+
+        .result-matched {
+            color: #94a3b8 !important;
+            border-color: rgba(148, 163, 184, 0.18) !important;
+            background: rgba(30, 41, 59, 0.4) !important;
+        }
+
+        /* === زر الترحيل === */
+        .btn-submit {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            padding: 13px 44px;
+            border: none;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.28);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-submit:hover::after {
+            opacity: 1;
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* === زر جديد === */
+        .btn-new {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #fff;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 9px 22px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 3px 14px rgba(16, 185, 129, 0.22);
+            text-decoration: none;
+        }
+
+        .btn-new:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.32);
+        }
+
+        /* === بطاقات الإحصائيات === */
+        .stat-card {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.09);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            transition: transform 0.25s, border-color 0.25s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(148, 163, 184, 0.18);
+        }
+
+        /* === الجدول === */
+        .table-wrap {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.09);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .data-table th {
+            padding: 13px 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-align: center;
+            white-space: nowrap;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.35);
+            font-size: 11.5px;
+        }
+
+        .data-table td {
+            padding: 11px 10px;
+            text-align: center;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.12);
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(30, 41, 59, 0.45);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* === الشارات === */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 700;
+        }
+
+        .badge-deficit {
+            background: rgba(239, 68, 68, 0.13);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.22);
+        }
+
+        .badge-surplus {
+            background: rgba(34, 197, 94, 0.13);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.22);
+        }
+
+        .badge-matched {
+            background: rgba(148, 163, 184, 0.08);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+        }
+
+        /* === أزرار الإجراءات === */
+        .btn-act {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-view {
+            background: rgba(6, 182, 212, 0.1);
+            color: #22d3ee;
+        }
+
+        .btn-view:hover {
+            background: rgba(6, 182, 212, 0.22);
+        }
+
+        .btn-del {
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+        }
+
+        .btn-del:hover {
+            background: rgba(239, 68, 68, 0.22);
+        }
+
+        /* === المودال === */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.13);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 660px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.28);
+            position: sticky;
+            top: 0;
+            background: #0f172a;
+            z-index: 2;
+            border-radius: 18px 18px 0 0;
+        }
+
+        .modal-body {
+            padding: 22px;
+        }
+
+        .modal-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: rgba(71, 85, 105, 0.28);
+            border: none;
+            color: #94a3b8;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.18);
+            color: #f87171;
+        }
+
+        .detail-section {
+            margin-bottom: 18px;
+        }
+
+        .detail-section-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.12);
+            font-size: 13px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #94a3b8;
+        }
+
+        .detail-value {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        /* === مودال تأكيد === */
+        .confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .confirm-overlay.active {
+            display: flex;
+        }
+
+        .confirm-box {
+            background: #0f172a;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 16px;
+            padding: 26px;
+            text-align: center;
+            max-width: 370px;
+            width: 100%;
+            animation: modalIn 0.25s ease;
+        }
+
+        /* === Toast === */
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translate(-50%, -16px);
+            }
+        }
+
+        /* === أنيميشن ظهور === */
+        .fade-in {
+            animation: fadeUp 0.45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in:nth-child(1) {
+            animation-delay: 0.04s;
+        }
+
+        .fade-in:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .fade-in:nth-child(3) {
+            animation-delay: 0.16s;
+        }
+
+        .fade-in:nth-child(4) {
+            animation-delay: 0.22s;
+        }
+
+        .fade-in:nth-child(5) {
+            animation-delay: 0.28s;
+        }
+
+        /* === سكرول === */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* === حالة فارغة === */
+        .empty-state {
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .bg-orb,
+            .fade-in,
+            .modal-box,
+            .confirm-box {
+                animation: none !important;
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .data-table {
+                font-size: 11px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- خلفية -->
+    <div class="bg-scene" aria-hidden="true">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <!-- ====== شريط التنقل ====== -->
+    <nav class="top-nav">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fas fa-exchange-alt text-white text-sm"></i>
+                </div>
+                <span class="text-white font-bold text-lg hidden sm:inline">نظام الورديات</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="nav-btn active" id="navForm" onclick="switchPage('form')">
+                    <i class="fas fa-edit"></i>
+                    <span class="hidden sm:inline">تسليم وردية</span>
+                </button>
+                <button class="nav-btn" id="navLogs" onclick="switchPage('logs')">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span class="hidden sm:inline">سجل الورديات</span>
+                    <span id="logsCount" class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full font-bold"
+                        style="display:none;"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative z-10">
+
+        <!-- ============================================ -->
+        <!-- صفحة: تسليم الوردية -->
+        <!-- ============================================ -->
+        <main id="pageForm" class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+            <!-- العنوان -->
+            <div class="text-center mb-9">
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">تسليم الوردية</h1>
+                <p class="text-slate-400 text-sm">نظام استلام وتسليم الورديات — إدارة مالية دقيقة</p>
+            </div>
+
+            <form id="shiftForm" novalidate>
+
+                <!-- البيانات الأساسية -->
+                <div class="shift-card card-teal p-5 sm:p-7 mb-6 fade-in">
+                    <div class="section-title">
+                        <div class="icon-box bg-teal-500/15 text-teal-400"><i class="fas fa-user-tie"></i></div>
+                        <span class="text-slate-100">البيانات الأساسية</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div>
+                            <label class="field-label" for="f_sender">اسم الموظف المسلّم</label>
+                            <input type="text" id="f_sender" class="field-input" placeholder="مثال: أحمد محمد" required>
+                        </div>
+                        <div>
+                            <label class="field-label" for="f_receiver">اسم الموظف المستلِم</label>
+                            <input type="text" id="f_receiver" class="field-input" placeholder="مثال: محمود علي"
+                                required>
+                        </div>
+                        <div>
+                            <label class="field-label" for="f_type">نوع الوردية</label>
+                            <select id="f_type" class="field-input" required>
+                                <option value="" disabled selected>اختر نوع الوردية</option>
+                                <option value="صباحية">صباحية</option>
+                                <option value="مسائية">مسائية</option>
+                                <option value="ليلية">ليلية</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الاستلام والتسليم -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+                    <!-- أرصدة الاستلام -->
+                    <div class="shift-card card-green p-5 sm:p-7 fade-in">
+                        <div class="section-title">
+                            <div class="icon-box bg-emerald-500/15 text-emerald-400"><i class="fas fa-arrow-down"></i>
+                            </div>
+                            <span class="text-slate-100">أرصدة الاستلام</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="field-label" for="r_cash">استلام الدرج النقدي</label>
+                                <input type="number" id="r_cash" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="field-label" for="r_insta">استلام الفوري</label>
+                                <input type="number" id="r_insta" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="field-label" for="r_voda">استلام فودافون كاش</label>
+                                <input type="number" id="r_voda" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="field-label" for="r_side">استلام الجانبي</label>
+                                <input type="number" id="r_side" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                        </div>
+                        <div class="total-row bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                            <span>إجمالي الاستلام</span>
+                            <span id="tot_receive">0.00 ج.م</span>
+                        </div>
+                    </div>
+
+                    <!-- أرصدة التسليم -->
+                    <div class="shift-card card-amber p-5 sm:p-7 fade-in">
+                        <div class="section-title">
+                            <div class="icon-box bg-amber-500/15 text-amber-400"><i class="fas fa-arrow-up"></i></div>
+                            <span class="text-slate-100">أرصدة التسليم</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="field-label" for="d_cash">تسليم الدرج النقدي</label>
+                                <input type="number" id="d_cash" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="field-label" for="d_insta">تسليم الفوري</label>
+                                <input type="number" id="d_insta" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="field-label" for="d_voda">تسليم كاش فودافون</label>
+                                <input type="number" id="d_voda" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="field-label" for="d_side">تسليم الجانبي</label>
+                                <input type="number" id="d_side" class="field-input" placeholder="0.00" step="0.01"
+                                    min="0" oninput="calc()">
+                            </div>
+                        </div>
+                        <div class="total-row bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            <span>إجمالي التسليم</span>
+                            <span id="tot_deliver">0.00 ج.م</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المصاريف -->
+                <div class="shift-card card-rose p-5 sm:p-7 mb-6 fade-in">
+                    <div class="section-title">
+                        <div class="icon-box bg-rose-500/15 text-rose-400"><i class="fas fa-money-bill-wave"></i></div>
+                        <span class="text-slate-100">المصاريف والمدفوعات</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" id="expGrid"></div>
+                    <div class="total-row bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                        <span>إجمالي المصاريف</span>
+                        <span id="tot_expenses">0.00 ج.م</span>
+                    </div>
+                </div>
+
+                <!-- المطابقة المالية -->
+                <div class="shift-card card-cyan p-5 sm:p-7 mb-8 fade-in">
+                    <div class="section-title">
+                        <div class="icon-box bg-cyan-500/15 text-cyan-400"><i class="fas fa-balance-scale"></i></div>
+                        <span class="text-slate-100">مركز المطابقة والموازنة المالية</span>
+                    </div>
+                    <div
+                        class="bg-slate-800/40 rounded-xl p-3.5 mb-5 text-sm text-slate-400 leading-relaxed border border-slate-700/30">
+                        <i class="fas fa-info-circle text-cyan-400/70 ml-1"></i>
+                        المعادلة: <span class="text-slate-200 font-semibold">صافي الوردية = (إجمالي التسليم - إجمالي
+                            الاستلام) + إجمالي المصاريف</span>
+                        <span class="text-slate-500 block mt-1 mr-6 text-xs">ثم تُقارن النتيجة بمبيعات الجهاز لتحديد
+                            العجز أو الزيادة أو التطابق.</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                            <label class="field-label"><i class="fas fa-desktop text-cyan-400/50 ml-1"></i>مبيعات الجهاز
+                                / السيستم</label>
+                            <input type="number" id="f_sales" class="field-input" placeholder="0.00" step="0.01" min="0"
+                                oninput="calc()" style="border-color:rgba(6,182,212,0.25);">
+                        </div>
+                        <div>
+                            <label class="field-label"><i class="fas fa-calculator text-cyan-400/50 ml-1"></i>صافي
+                                الوردية الفعلي</label>
+                            <input type="text" id="f_net" class="field-input readonly-field" value="0.00 ج.م" readonly
+                                tabindex="-1">
+                        </div>
+                        <div>
+                            <label class="field-label"><i
+                                    class="fas fa-flag-checkered text-cyan-400/50 ml-1"></i>النتيجة النهائية</label>
+                            <input type="text" id="f_result" class="field-input readonly-field result-matched"
+                                value="متطابق" readonly tabindex="-1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- زر الترحيل -->
+                <div class="text-center">
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>ترحيل الوردية وحفظها</span>
+                    </button>
+                    <p class="text-slate-500 text-xs mt-3">سيتم حفظ البيانات محلياً والانتقال لسجل الورديات</p>
+                </div>
+            </form>
+        </main>
+
+        <!-- ============================================ -->
+        <!-- صفحة: سجل الورديات -->
+        <!-- ============================================ -->
+        <section id="pageLogs" class="max-w-7xl mx-auto px-4 sm:px-6 py-8" style="display:none;">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-7">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black text-white mb-1">سجل الورديات</h1>
+                    <p class="text-slate-500 text-sm">جميع الورديات المرحلة من الأحدث للأقدم</p>
+                </div>
+                <button class="btn-new" onclick="switchPage('form')">
+                    <i class="fas fa-plus"></i>
+                    <span>وردية جديدة</span>
+                </button>
+            </div>
+
+            <!-- الإحصائيات -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7" id="statsGrid"></div>
+
+            <!-- الجدول -->
+            <div class="table-wrap" id="tableWrap"></div>
+        </section>
+    </div>
+
+    <!-- ====== مودال التفاصيل ====== -->
+    <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetail()">
+        <div class="modal-box" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h2 class="text-base font-bold text-white flex items-center gap-2"><i
+                        class="fas fa-file-invoice text-cyan-400"></i> تفاصيل الوردية</h2>
+                <button class="modal-close" onclick="closeDetail()" aria-label="إغلاق"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+        </div>
+    </div>
+
+    <!-- ====== مودال تأكيد الحذف ====== -->
+    <div class="confirm-overlay" id="confirmModal">
+        <div class="confirm-box">
+            <div class="w-14 h-14 rounded-full bg-red-500/12 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-red-400 text-2xl"></i>
+            </div>
+            <h3 class="text-white font-bold text-lg mb-2">تأكيد الحذف</h3>
+            <p class="text-slate-400 text-sm mb-6">هل أنت متأكد من حذف هذه الوردية؟<br>لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="execDelete()"
+                    class="px-5 py-2 rounded-lg bg-red-500/18 border border-red-500/28 text-red-400 font-bold text-sm cursor-pointer hover:bg-red-500/28 transition-colors"
+                    style="font-family:Cairo;">
+                    <i class="fas fa-trash-alt ml-1"></i> نعم، احذف
+                </button>
+                <button onclick="closeConfirm()"
+                    class="px-5 py-2 rounded-lg bg-slate-700/40 border border-slate-600/28 text-slate-300 font-bold text-sm cursor-pointer hover:bg-slate-700 transition-colors"
+                    style="font-family:Cairo;">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // تخزين البيانات في localStorage
+        // ============================================
+        var STORAGE_KEY = 'shift_management_data';
+
+        function getShifts() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            } catch (e) { return []; }
+        }
+
+        function saveShifts(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // ============================================
+        // توليد خانات المصاريف الـ 10
+        // ============================================
+        (function buildExpenses() {
+            var grid = document.getElementById('expGrid');
+            for (var i = 1; i <= 10; i++) {
+                var div = document.createElement('div');
+                div.innerHTML = '<label class="field-label" for="exp_' + i + '">مصروف ' + i + '</label>' +
+                    '<input type="number" id="exp_' + i + '" class="field-input" placeholder="0.00" step="0.01" min="0" oninput="calc()">';
+                grid.appendChild(div);
+            }
+        })();
+
+        // ============================================
+        // تنسيق الأرقام
+        // ============================================
+        function fmt(n) {
+            var s = parseFloat(n).toFixed(2);
+            var p = s.split('.');
+            p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return p.join('.') + ' ج.م';
+        }
+
+        // ============================================
+        // دالة الحساب الرئيسية
+        // ============================================
+        function calc() {
+            // أرصدة الاستلام
+            var rCash = parseFloat(document.getElementById('r_cash').value) || 0;
+            var rInsta = parseFloat(document.getElementById('r_insta').value) || 0;
+            var rVoda = parseFloat(document.getElementById('r_voda').value) || 0;
+            var rSide = parseFloat(document.getElementById('r_side').value) || 0;
+            var totR = rCash + rInsta + rVoda + rSide;
+            document.getElementById('tot_receive').textContent = fmt(totR);
+
+            // أرصدة التسليم
+            var dCash = parseFloat(document.getElementById('d_cash').value) || 0;
+            var dInsta = parseFloat(document.getElementById('d_insta').value) || 0;
+            var dVoda = parseFloat(document.getElementById('d_voda').value) || 0;
+            var dSide = parseFloat(document.getElementById('d_side').value) || 0;
+            var totD = dCash + dInsta + dVoda + dSide;
+            document.getElementById('tot_deliver').textContent = fmt(totD);
+
+            // المصاريف
+            var totE = 0;
+            for (var i = 1; i <= 10; i++) {
+                totE += parseFloat(document.getElementById('exp_' + i).value) || 0;
+            }
+            document.getElementById('tot_expenses').textContent = fmt(totE);
+
+            // مبيعات الجهاز
+            var sales = parseFloat(document.getElementById('f_sales').value) || 0;
+
+            // صافي الوردية
+            var net = (totD - totR) + totE;
+            document.getElementById('f_net').value = fmt(net);
+
+            // النتيجة النهائية
+            var diff = net - sales;
+            var el = document.getElementById('f_result');
+            el.classList.remove('result-deficit', 'result-surplus', 'result-matched');
+            if (diff < -0.005) {
+                el.value = 'عجز: ' + fmt(Math.abs(diff));
+                el.classList.add('result-deficit');
+            } else if (diff > 0.005) {
+                el.value = 'زيادة: ' + fmt(diff);
+                el.classList.add('result-surplus');
+            } else {
+                el.value = 'متطابق';
+                el.classList.add('result-matched');
+            }
+        }
+
+        // ============================================
+        // إرسال النموذج (ترحيل الوردية)
+        // ============================================
+        document.getElementById('shiftForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var sender = document.getElementById('f_sender').value.trim();
+            var receiver = document.getElementById('f_receiver').value.trim();
+            var type = document.getElementById('f_type').value;
+
+            if (!sender || !receiver || !type) {
+                toast('يرجى ملء جميع البيانات الأساسية', 'error');
+                return;
+            }
+
+            // جمع البيانات
+            var rCash = parseFloat(document.getElementById('r_cash').value) || 0;
+            var rInsta = parseFloat(document.getElementById('r_insta').value) || 0;
+            var rVoda = parseFloat(document.getElementById('r_voda').value) || 0;
+            var rSide = parseFloat(document.getElementById('r_side').value) || 0;
+            var dCash = parseFloat(document.getElementById('d_cash').value) || 0;
+            var dInsta = parseFloat(document.getElementById('d_insta').value) || 0;
+            var dVoda = parseFloat(document.getElementById('d_voda').value) || 0;
+            var dSide = parseFloat(document.getElementById('d_side').value) || 0;
+            var expenses = [];
+            for (var i = 1; i <= 10; i++) {
+                expenses.push(parseFloat(document.getElementById('exp_' + i).value) || 0);
+            }
+            var totE = expenses.reduce(function (a, b) { return a + b; }, 0);
+            var sales = parseFloat(document.getElementById('f_sales').value) || 0;
+            var totR = rCash + rInsta + rVoda + rSide;
+            var totD = dCash + dInsta + dVoda + dSide;
+            var net = (totD - totR) + totE;
+            var diff = net - sales;
+
+            var status, amount;
+            if (diff < -0.005) { status = 'عجز'; amount = Math.abs(diff); }
+            else if (diff > 0.005) { status = 'زيادة'; amount = diff; }
+            else { status = 'متطابق'; amount = 0; }
+
+            // إنشاء سجل الوردية
+            var record = {
+                id: Date.now(),
+                created_at: new Date().toISOString(),
+                sender_name: sender,
+                receiver_name: receiver,
+                shift_type: type,
+                receive_cash_drawer: rCash,
+                receive_instapay: rInsta,
+                receive_vodafone_cash: rVoda,
+                receive_side: rSide,
+                deliver_cash_drawer: dCash,
+                deliver_instapay: dInsta,
+                deliver_vodafone_cash: dVoda,
+                deliver_side: dSide,
+                expenses: expenses,
+                total_expenses: totE,
+                system_sales: sales,
+                net_shift: net,
+                result_status: status,
+                result_amount: amount
+            };
+
+            // حفظ
+            var shifts = getShifts();
+            shifts.unshift(record);
+            saveShifts(shifts);
+
+            // إعادة تعيين النموذج
+            document.getElementById('shiftForm').reset();
+            calc();
+            updateLogsBadge();
+
+            toast('تم ترحيل الوردية بنجاح', 'success');
+
+            // الانتقال للسجل
+            setTimeout(function () { switchPage('logs'); }, 600);
+        });
+
+        // ============================================
+        // التنقل بين الصفحتين
+        // ============================================
+        function switchPage(page) {
+            var formPage = document.getElementById('pageForm');
+            var logsPage = document.getElementById('pageLogs');
+            var navForm = document.getElementById('navForm');
+            var navLogs = document.getElementById('navLogs');
+
+            if (page === 'form') {
+                formPage.style.display = '';
+                logsPage.style.display = 'none';
+                navForm.classList.add('active');
+                navLogs.classList.remove('active');
+            } else {
+                formPage.style.display = 'none';
+                logsPage.style.display = '';
+                navForm.classList.remove('active');
+                navLogs.classList.add('active');
+                renderLogs();
+            }
+        }
+
+        // ============================================
+        // تحديث شارة عدد السجلات
+        // ============================================
+        function updateLogsBadge() {
+            var c = getShifts().length;
+            var el = document.getElementById('logsCount');
+            if (c > 0) {
+                el.style.display = '';
+                el.textContent = c;
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        // ============================================
+        // عرض صفحة السجل
+        // ============================================
+        function renderLogs() {
+            var shifts = getShifts();
+            var total = shifts.length;
+            var deficit = 0, surplus = 0, matched = 0;
+            for (var i = 0; i < shifts.length; i++) {
+                if (shifts[i].result_status === 'عجز') deficit++;
+                else if (shifts[i].result_status === 'زيادة') surplus++;
+                else matched++;
+            }
+
+            // الإحصائيات
+            document.getElementById('statsGrid').innerHTML =
+                '<div class="stat-card"><div class="flex items-center gap-3 mb-2"><div class="w-9 h-9 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400 text-sm"><i class="fas fa-layer-group"></i></div><span class="text-slate-400 text-sm font-medium">إجمالي الورديات</span></div><div class="text-2xl font-black text-white">' + total + '</div></div>' +
+                '<div class="stat-card"><div class="flex items-center gap-3 mb-2"><div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 text-sm"><i class="fas fa-arrow-down"></i></div><span class="text-slate-400 text-sm font-medium">عجز</span></div><div class="text-2xl font-black text-red-400">' + deficit + '</div></div>' +
+                '<div class="stat-card"><div class="flex items-center gap-3 mb-2"><div class="w-9 h-9 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400 text-sm"><i class="fas fa-arrow-up"></i></div><span class="text-slate-400 text-sm font-medium">زيادة</span></div><div class="text-2xl font-black text-green-400">' + surplus + '</div></div>' +
+                '<div class="stat-card"><div class="flex items-center gap-3 mb-2"><div class="w-9 h-9 rounded-lg bg-slate-500/10 flex items-center justify-center text-slate-400 text-sm"><i class="fas fa-equals"></i></div><span class="text-slate-400 text-sm font-medium">متطابق</span></div><div class="text-2xl font-black text-slate-300">' + matched + '</div></div>';
+
+            // الجدول
+            var wrap = document.getElementById('tableWrap');
+            if (total === 0) {
+                wrap.innerHTML = '<div class="empty-state"><i class="fas fa-inbox text-4xl text-slate-600 mb-4" style="display:block;"></i><p class="text-slate-500 text-lg font-semibold">لا توجد ورديات مرحلة بعد</p><p class="text-slate-600 text-sm mt-1">ابدأ بتسليم أول وردية من <a href="#" onclick="switchPage(\'form\');return false;" class="text-emerald-400 hover:underline">هنا</a></p></div>';
+                return;
+            }
+
+            var typeColors = { 'صباحية': 'text-amber-400', 'مسائية': 'text-indigo-400', 'ليلية': 'text-slate-400' };
+            var rows = '';
+            for (var i = 0; i < shifts.length; i++) {
+                var s = shifts[i];
+                var tR = s.receive_cash_drawer + s.receive_instapay + s.receive_vodafone_cash + s.receive_side;
+                var tD = s.deliver_cash_drawer + s.deliver_instapay + s.deliver_vodafone_cash + s.deliver_side;
+                var dt = new Date(s.created_at);
+                var dateStr = dt.getFullYear() + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + String(dt.getDate()).padStart(2, '0');
+                var timeStr = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+
+                var badgeCls = 'badge-matched', badgeIcon = 'fas fa-check', statusTxt = 'متطابق';
+                if (s.result_status === 'عجز') { badgeCls = 'badge-deficit'; badgeIcon = 'fas fa-arrow-down'; statusTxt = 'عجز: ' + parseFloat(s.result_amount).toFixed(2); }
+                else if (s.result_status === 'زيادة') { badgeCls = 'badge-surplus'; badgeIcon = 'fas fa-arrow-up'; statusTxt = 'زيادة: ' + parseFloat(s.result_amount).toFixed(2); }
+
+                var tc = typeColors[s.shift_type] || 'text-slate-300';
+
+                rows += '<tr>' +
+                    '<td class="text-slate-500 font-semibold">' + (total - i) + '</td>' +
+                    '<td><div class="font-semibold text-slate-200">' + esc(dateStr) + '</div><div class="text-slate-500 text-xs">' + esc(timeStr) + '</div></td>' +
+                    '<td class="font-semibold">' + esc(s.sender_name) + '</td>' +
+                    '<td class="font-semibold">' + esc(s.receiver_name) + '</td>' +
+                    '<td><span class="' + tc + ' font-semibold">' + esc(s.shift_type) + '</span></td>' +
+                    '<td class="text-emerald-400 font-semibold">' + tR.toFixed(2) + '</td>' +
+                    '<td class="text-amber-400 font-semibold">' + tD.toFixed(2) + '</td>' +
+                    '<td class="text-rose-400 font-semibold">' + s.total_expenses.toFixed(2) + '</td>' +
+                    '<td class="text-cyan-400 font-semibold">' + s.system_sales.toFixed(2) + '</td>' +
+                    '<td class="text-slate-200 font-bold">' + s.net_shift.toFixed(2) + '</td>' +
+                    '<td><span class="badge ' + badgeCls + '"><i class="' + badgeIcon + '" style="font-size:10px;"></i> ' + esc(statusTxt) + '</span></td>' +
+                    '<td><div class="flex items-center justify-center gap-2">' +
+                    '<button class="btn-act btn-view" onclick="openDetail(' + s.id + ')" title="عرض التفاصيل"><i class="fas fa-eye"></i></button>' +
+                    '<button class="btn-act btn-del" onclick="confirmDel(' + s.id + ')" title="حذف"><i class="fas fa-trash-alt"></i></button>' +
+                    '</div></td>' +
+                    '</tr>';
+            }
+
+            wrap.innerHTML = '<div class="overflow-x-auto"><table class="data-table"><thead><tr>' +
+                '<th>#</th><th>التاريخ والوقت</th><th>المسلّم</th><th>المستلِم</th><th>النوع</th>' +
+                '<th>إجمالي الاستلام</th><th>إجمالي التسليم</th><th>المصاريف</th><th>مبيعات الجهاز</th><th>صافي الوردية</th><th>الحالة</th><th>إجراءات</th>' +
+                '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+        }
+
+        // ============================================
+        // مودال التفاصيل
+        // ============================================
+        function openDetail(id) {
+            var shifts = getShifts();
+            var s = null;
+            for (var i = 0; i < shifts.length; i++) {
+                if (shifts[i].id === id) { s = shifts[i]; break; }
+            }
+            if (!s) return;
+
+            var tR = s.receive_cash_drawer + s.receive_instapay + s.receive_vodafone_cash + s.receive_side;
+            var tD = s.deliver_cash_drawer + s.deliver_instapay + s.deliver_vodafone_cash + s.deliver_side;
+            var dt = new Date(s.created_at);
+            var dtStr = dt.getFullYear() + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + String(dt.getDate()).padStart(2, '0') + ' - ' + String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+
+            var expHtml = '';
+            var hasExp = false;
+            for (var e = 0; e < s.expenses.length; e++) {
+                if (s.expenses[e] > 0) {
+                    hasExp = true;
+                    expHtml += '<div class="detail-row"><span class="detail-label">مصروف ' + (e + 1) + '</span><span class="detail-value">' + fmt(s.expenses[e]) + '</span></div>';
+                }
+            }
+            if (!hasExp) expHtml = '<div class="text-slate-500 text-sm text-center py-2">لا توجد مصاريف مسجلة</div>';
+
+            var resHtml = '';
+            if (s.result_status === 'عجز') resHtml = '<span style="color:#f87171;font-weight:800;">عجز: ' + fmt(s.result_amount) + '</span>';
+            else if (s.result_status === 'زيادة') resHtml = '<span style="color:#4ade80;font-weight:800;">زيادة: ' + fmt(s.result_amount) + '</span>';
+            else resHtml = '<span style="color:#94a3b8;font-weight:800;">متطابق</span>';
+
+            document.getElementById('detailBody').innerHTML =
+                '<div class="detail-section"><div class="detail-section-title text-teal-400"><i class="fas fa-user-tie"></i> البيانات الأساسية</div>' +
+                '<div class="detail-row"><span class="detail-label">المسلّم</span><span class="detail-value">' + esc(s.sender_name) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">المستلِم</span><span class="detail-value">' + esc(s.receiver_name) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">نوع الوردية</span><span class="detail-value">' + esc(s.shift_type) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">التاريخ</span><span class="detail-value">' + esc(dtStr) + '</span></div>' +
+                '</div>' +
+
+                '<div class="detail-section"><div class="detail-section-title text-emerald-400"><i class="fas fa-arrow-down"></i> أرصدة الاستلام</div>' +
+                '<div class="detail-row"><span class="detail-label">الدرج النقدي</span><span class="detail-value">' + fmt(s.receive_cash_drawer) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">الفوري</span><span class="detail-value">' + fmt(s.receive_instapay) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">فودافون كاش</span><span class="detail-value">' + fmt(s.receive_vodafone_cash) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">الجانبي</span><span class="detail-value">' + fmt(s.receive_side) + '</span></div>' +
+                '<div class="detail-row" style="border-top:1px solid rgba(52,211,153,0.2);padding-top:10px;margin-top:4px;"><span class="detail-label text-emerald-400 font-bold">الإجمالي</span><span class="detail-value text-emerald-300 font-bold">' + fmt(tR) + '</span></div>' +
+                '</div>' +
+
+                '<div class="detail-section"><div class="detail-section-title text-amber-400"><i class="fas fa-arrow-up"></i> أرصدة التسليم</div>' +
+                '<div class="detail-row"><span class="detail-label">الدرج النقدي</span><span class="detail-value">' + fmt(s.deliver_cash_drawer) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">الفوري</span><span class="detail-value">' + fmt(s.deliver_instapay) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">كاش فودافون</span><span class="detail-value">' + fmt(s.deliver_vodafone_cash) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">الجانبي</span><span class="detail-value">' + fmt(s.deliver_side) + '</span></div>' +
+                '<div class="detail-row" style="border-top:1px solid rgba(251,191,36,0.2);padding-top:10px;margin-top:4px;"><span class="detail-label text-amber-400 font-bold">الإجمالي</span><span class="detail-value text-amber-300 font-bold">' + fmt(tD) + '</span></div>' +
+                '</div>' +
+
+                '<div class="detail-section"><div class="detail-section-title text-rose-400"><i class="fas fa-money-bill-wave"></i> المصاريف والمدفوعات</div>' +
+                expHtml +
+                '<div class="detail-row" style="border-top:1px solid rgba(251,113,133,0.2);padding-top:10px;margin-top:4px;"><span class="detail-label text-rose-400 font-bold">إجمالي المصاريف</span><span class="detail-value text-rose-300 font-bold">' + fmt(s.total_expenses) + '</span></div>' +
+                '</div>' +
+
+                '<div class="detail-section" style="background:rgba(6,182,212,0.05);border-radius:12px;padding:16px;border:1px solid rgba(6,182,212,0.14);">' +
+                '<div class="detail-section-title text-cyan-400"><i class="fas fa-balance-scale"></i> المطابقة المالية</div>' +
+                '<div class="detail-row"><span class="detail-label">مبيعات الجهاز / السيستم</span><span class="detail-value">' + fmt(s.system_sales) + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">صافي الوردية الفعلي</span><span class="detail-value text-cyan-300 font-bold">' + fmt(s.net_shift) + '</span></div>' +
+                '<div class="detail-row" style="border-top:1px solid rgba(6,182,212,0.2);padding-top:12px;margin-top:4px;"><span class="detail-label text-cyan-400 font-bold">النتيجة النهائية</span><span class="detail-value">' + resHtml + '</span></div>' +
+                '</div>';
+
+            document.getElementById('detailModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // ============================================
+        // حذف الوردية
+        // ============================================
+        var deleteId = null;
+
+        function confirmDel(id) {
+            deleteId = id;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirm() {
+            deleteId = null;
+            document.getElementById('confirmModal').classList.remove('active');
+        }
+
+        function execDelete() {
+            if (deleteId === null) return;
+            var shifts = getShifts();
+            shifts = shifts.filter(function (s) { return s.id !== deleteId; });
+            saveShifts(shifts);
+            closeConfirm();
+            updateLogsBadge();
+            renderLogs();
+            toast('تم حذف الوردية بنجاح', 'success');
+        }
+
+        // ============================================
+        // إشعارات Toast
+        // ============================================
+        function toast(msg, type) {
+            var bg = type === 'success' ? 'rgba(5,150,105,0.92)' : 'rgba(220,38,38,0.92)';
+            var border = type === 'success' ? 'rgba(52,211,153,0.4)' : 'rgba(248,113,113,0.4)';
+            var icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+
+            var t = document.createElement('div');
+            t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:300;padding:12px 26px;border-radius:14px;background:' + bg + ';border:1px solid ' + border + ';color:#fff;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:toastIn 0.3s ease;backdrop-filter:blur(8px);white-space:nowrap;';
+            t.innerHTML = '<i class="' + icon + '"></i><span>' + msg + '</span>';
+            document.body.appendChild(t);
+
+            setTimeout(function () {
+                t.style.animation = 'toastOut 0.3s ease forwards';
+                setTimeout(function () { t.remove(); }, 300);
+            }, 3000);
+        }
+
+        // ============================================
+        // أداة تهريب HTML
+        // ============================================
+        function esc(str) {
+            var d = document.createElement('div');
+            d.appendChild(document.createTextNode(str));
+            return d.innerHTML;
+        }
+
+        // ============================================
+        // إغلاق بمفتاح Escape
+        // ============================================
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { closeDetail(); closeConfirm(); }
+        });
+
+        // ============================================
+        // التهيئة
+        // ============================================
+        updateLogsBadge();
+        calc();
+    </script>
+</body>
+
+</html>
